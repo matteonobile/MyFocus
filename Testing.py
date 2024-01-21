@@ -11,9 +11,11 @@ import numpy as np
 import streamlit as st
 import math
 
-raw = pd.read_excel("Time Series.xlsx")
-raw.Date = pd.to_datetime(raw.Date)
-raw.set_index("Date",drop=True,inplace=True)
+# raw = pd.read_excel("Time Series.xlsx")
+# raw.Date = pd.to_datetime(raw.Date)
+# raw.set_index("Date",drop=True,inplace=True)
+
+raw = pd.read_pickle("Time Series.pickle")
 
 assets = raw.columns
 
