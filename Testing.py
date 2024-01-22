@@ -20,13 +20,6 @@ import math
 assets = pd.read_pickle("./Assets/Assets.pickle")
 risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
-# data_df = pd.DataFrame(
-#     {
-#         "assets": assets,
-#         "weights" : [0] * assets.shape[0]
-#     }
-# )
-
 
 st.set_page_config(layout="wide")
 
