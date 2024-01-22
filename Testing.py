@@ -152,6 +152,7 @@ with structure:
             
             largest_equity = full_equity.iloc[:10,:]
             largest_equity = largest_equity[['Descr','Weight']]
+            st.write("Largest Equity Positions")
             st.write(largest_equity)
             # st.write(full_equity)
             
@@ -160,17 +161,29 @@ with structure:
             
             # Sectors
             equity_sectors = full_equity[['Sector','Weight']].groupby("Sector").sum()
+            equity_sectors.columns = ['Port']
             bmk_sectors = bmk_equity[['Sector','Weight']].groupby("Sector").sum()
+            bmk_sectors.columns = ['Bmk']
             
-            active_sectors = equity_sectors - bmk_sectors
+            all_sectors = equity_sectors.join(bmk_sectors,how="outer")
+            all_sectors.fillna(0,inplace=True)
+            active_sectors = all_sectors['Port'] - all_sectors['Bmk']
+            active_sectors.sort_values(ascending=False)
+            st.write("Sector Active Allocation")
             st.bar_chart(data=active_sectors)
             
             # Countries
             equity_country = full_equity[['Country','Weight']].groupby("Country").sum()
+            equity_country.columns = ['Port']
             bmk_country = bmk_equity[['Country','Weight']].groupby("Country").sum()
-
-            active_country = equity_country - bmk_country
-            st.bar_chart(data=active_country)
+            bmk_country.columns = ['Bmk']
+            all_country = equity_country.join(bmk_country,how='outer')
+            all_country.fillna(0,inplace=True)
+            active_country = all_country['Port'] - all_country['Bmk']
+            active_country.sort_values(ascending=False)
+            
+            st.write("Country Active Allocation")
+            st.bar_chart(data=active_country,x=None)
             
             
         # with metrics:        
