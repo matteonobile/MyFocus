@@ -425,10 +425,29 @@ with structure:
                 pfolio_metrics,pd.DataFrame([[((pfolio_ret.sum() / 5) - (benchmark_ret.sum() / 5)) / ((pfolio_ret - benchmark_ret).std() * math.sqrt(52)) ]],
                                             columns = ['Portfolio'],index=['Information Ratio'])
                                             ])
+
+            A = np.vstack([benchmark_ret.values, np.ones(pfolio_ret.shape[0])]).T
+            y = pfolio_ret.values
             
-            pfolio_metrics.loc[pfolio_metrics.index.isin(['Annual Return','Risk','Active Return','Tracking Error']),:] = \
-                pfolio_metrics.loc[pfolio_metrics.index.isin(['Annual Return','Risk','Active Return','Tracking Error']),:] * 100
+            beta , alpha = np.linalg.lstsq(A,y,rcond=None)[0]
+            alpha = alpha * 52
+
+            pfolio_metrics = pd.concat([
+                pfolio_metrics,pd.DataFrame([[beta]],
+                                            columns = ['Portfolio'],index=['Beta'])
+                                            ])
+
+            pfolio_metrics = pd.concat([
+                pfolio_metrics,pd.DataFrame([[alpha]],
+                                            columns = ['Portfolio'],index=['Alpha'])
+                                            ])
+
+
             
+            pfolio_metrics.loc[pfolio_metrics.index.isin(['Annual Return','Risk','Active Return','Tracking Error','Alpha']),:] = \
+                pfolio_metrics.loc[pfolio_metrics.index.isin(['Annual Return','Risk','Active Return','Tracking Error','Alpha']),:] * 100
+            
+
             pfolio_metrics = pfolio_metrics.round(decimals=2)
             
             st.write(pfolio_metrics)
