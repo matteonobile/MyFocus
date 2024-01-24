@@ -9,6 +9,7 @@ Created on Fri Jan 19 12:54:27 2024
 import pandas as pd
 import numpy as np
 import streamlit as st
+import altair as alt
 import math
 
 # raw = pd.read_excel("Time Series.xlsx")
@@ -472,7 +473,22 @@ with structure:
             pfolio_metrics = pfolio_metrics.round(decimals=2)
             st.write(pfolio_metrics)
             
+            ef = pd.read_pickle("./Assets/Eff Frontier.pickle")
+            ef['Color'] = 'Efficient Frontier'
+            ef['Size'] = 0.5
             
+            
+            ef = pd.concat([ef,pd.DataFrame([[pfolio_ret.std()*math.sqrt(52),pfolio_ret.sum() / 5,'Portfolio',3]],columns = ['Risk','Return','Color','Size'])])
+            ef.Risk = ef.Risk * 100
+            ef.Return = ef.Return * 100
+            
+            c = (
+                alt.Chart(ef)
+                .mark_circle()
+                .encode(alt.X("Risk").scale(zero=False),alt.Y("Return").scale(zero=False),color="Color",size='Size')
+                )
+            st.write("Historical Efficient Frontier on benchmark indices")
+            st.altair_chart(c,use_container_width=True)
             
                                             
 
