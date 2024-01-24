@@ -37,6 +37,13 @@ currency = st.sidebar.selectbox(
     ('USD',)
 )
 
+allocation_strategic = st.sidebar.selectbox(
+    'Allocation Strategy',
+    ['Back to Benchmark','Bank View','Risk Limit'])
+
+relative = st.sidebar.toggle("Relative",value='on')
+
+
 structure, composition, metrics = st.tabs(['Structure','Composition','Metrics'])
 
 
@@ -115,7 +122,7 @@ with structure:
         )
 
    
-    if st.button('Calc'):
+    if st.sidebar.button('Calc'):
         portfolio_weights = pd.Series([cash,bond,equity,alternative],
                             index=['cash','bond','equity','alternative'])
         
@@ -170,9 +177,14 @@ with structure:
                 
                 all_sectors = equity_sectors.join(bmk_sectors,how="outer")
                 all_sectors.fillna(0,inplace=True)
-                active_sectors = all_sectors['Port'] - all_sectors['Bmk']
+                if relative:
+                    active_sectors = all_sectors['Port'] - all_sectors['Bmk']
+                    st.write("Sector Active Allocation")
+                else:
+                    active_sectors = all_sectors['Port']
+                    st.write("Sector Allocation")
                 active_sectors.sort_values(ascending=False)
-                st.write("Sector Active Allocation")
+                
                 st.bar_chart(data=active_sectors)
                 
                 # Countries
@@ -182,11 +194,18 @@ with structure:
                 bmk_country.columns = ['Bmk']
                 all_country = equity_country.join(bmk_country,how='outer')
                 all_country.fillna(0,inplace=True)
-                active_country = all_country['Port'] - all_country['Bmk']
+                if relative:
+                    active_country = all_country['Port'] - all_country['Bmk']
+                else:
+                    active_country = all_country['Port']
                 active_country = active_country.astype(float)
                 active_country = active_country.sort_values(ascending=False)
-                active_country = pd.concat([active_country.iloc[:5],active_country.iloc[-5:]])
-                st.write("Country Active Allocation (10 largest deviations")
+                if relative:
+                    active_country = pd.concat([active_country.iloc[:5],active_country.iloc[-5:]])
+                    st.write("Country Active Allocation (10 largest deviations)")
+                else:
+                    active_country = active_country[:10]
+                    st.write("Largest Country Exposures")
                 st.bar_chart(data=active_country,x=None)
 
 #####################################################################
@@ -238,11 +257,16 @@ with structure:
                 all_duration = bond_duration.join(bmk_duration,how='outer')
                 all_duration.fillna(0,inplace=True)
                 
-                active_duration = all_duration['Port'] - all_duration['Bmk']
+                if relative:
+                    active_duration = all_duration['Port'] - all_duration['Bmk']
+                    st.write("Active Duration Exposure")
+                else:
+                    active_duration = all_duration['Port']
+                    st.write("Duration Exposure")
                 active_duration = active_duration.astype(float)
                 active_duration = active_duration.sort_values(ascending=False)
                 # active_duration = pd.concat([active_duration.iloc[:5],active_duration.iloc[-5:]])
-                st.write("Active Duration Exposure")
+                
                 st.bar_chart(data=active_duration,x=None)
     
                 # rating allocation
@@ -253,11 +277,16 @@ with structure:
                 all_rating = bond_rating.join(bmk_rating,how='outer')
                 all_rating.fillna(0,inplace=True)
                 
-                active_rating = all_rating['Port'] - all_rating['Bmk']
+                if relative:
+                    active_rating = all_rating['Port'] - all_rating['Bmk']
+                    st.write("Active Rating Exposure")
+                else:
+                    active_rating = all_rating['Port']
+                    st.write("Rating Exposure")
                 active_rating = active_rating.astype(float)
                 active_rating = active_rating.sort_values(ascending=False)
                 # active_duration = pd.concat([active_duration.iloc[:5],active_duration.iloc[-5:]])
-                st.write("Active Rating Exposure")
+                
                 st.bar_chart(data=active_rating,x=None)
     
                 # country allocation
@@ -268,11 +297,19 @@ with structure:
                 all_country = bond_country.join(bmk_country,how='outer')
                 all_country.fillna(0,inplace=True)
                 
-                active_country = all_country['Port'] - all_country['Bmk']
+                if relative:
+                    active_country = all_country['Port'] - all_country['Bmk']
+                    st.write("Active Country Exposure")
+                else:
+                    active_country = all_country['Port'] 
+                    st.write("Country Exposure")
                 active_country = active_country.astype(float)
                 active_country = active_country.sort_values(ascending=False)
-                active_country = pd.concat([active_country.iloc[:5],active_country.iloc[-5:]])
-                st.write("Active Country Exposure")
+                if relative:
+                    active_country = pd.concat([active_country.iloc[:5],active_country.iloc[-5:]])
+                else:
+                    active_country = active_country[:10]
+                
                 st.bar_chart(data=active_country,x=None)
     
                 # sector allocation
@@ -283,11 +320,16 @@ with structure:
                 all_sector = bond_sector.join(bmk_sector,how='outer')
                 all_sector.fillna(0,inplace=True)
                 
-                active_sector = all_sector['Port'] - all_sector['Bmk']
+                if relative:
+                    active_sector = all_sector['Port'] - all_sector['Bmk']
+                    st.write("Active Sector Exposure")
+                else:
+                    active_sector = all_sector['Port']
+                    st.write("Sector Exposure")
                 active_sector = active_sector.astype(float)
                 active_sector = active_sector.sort_values(ascending=False)
                 # active_sector = pd.concat([active_sector.iloc[:5],active_sector.iloc[-5:]])
-                st.write("Active Sector Exposure")
+                
                 st.bar_chart(data=active_sector,x=None)
                 
             
