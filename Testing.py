@@ -23,7 +23,7 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
 st.set_page_config(layout="wide")
 
-st.header("EFG Asset Management - My Focus", divider=True)
+st.header("EFG Asset Management - Portfolio Construction Tool", divider=True)
 st.sidebar.header("Portfolio")
 
 risk_profile = st.sidebar.selectbox(
@@ -49,13 +49,13 @@ with structure:
             
     equity_selection = st.multiselect(
         'Pick your equity components',
-        assets[(assets.Currency == currency) & (assets.Type=='Equity')])
+        assets[(assets.Currency == currency) & (assets.Type=='Equity')],default = 'ACWI USD')
     bond_selection = st.multiselect(
         'Pick your bond components',
-        assets[(assets.Currency == currency) & (assets.Type=='Bond')])
+        assets[(assets.Currency == currency) & (assets.Type=='Bond')],default='EuroDollars USD')
     alternative_selection = st.multiselect(
         'Pick your alternatives',
-        assets[(assets.Currency == currency) & (assets.Type=='Alternative')])
+        assets[(assets.Currency == currency) & (assets.Type=='Alternative')], default = 'Multi Hedge Focus USD')
 
     if len(equity_selection) > 0:
         equity_df = pd.DataFrame(equity_selection)
@@ -291,18 +291,124 @@ with structure:
                 st.bar_chart(data=active_sector,x=None)
                 
             
-            
-            
-        # with metrics:        
+        with metrics:        
         #     # plot the total return
-        #     st.line_chart(data=pfolio)
+            # portfolio_weights
+            # bond_df
+            # equity_df
+            # alternative_df
             
-        #     # get some risk metrics
-        #     metrics = pd.Series(dtype=float,name='Metrics')
-        #     metrics['Annual Return'] = ret.mean()*260
-        #     metrics['Risk'] = ret.std()*math.sqrt(260)
-        #     metrics = metrics * 100
-        #     metrics = metrics.round(decimals=2)
+            bond_portfolio = bond_df.copy()
+            bond_portfolio.Weight = bond_portfolio.Weight * portfolio_weights.bond
+            equity_portfolio = equity_df.copy()
+            equity_portfolio.Weight = equity_portfolio.Weight * portfolio_weights.equity
+            alternative_portfolio = alternative_df.copy()
+            alternative_portfolio.Weight = alternative_portfolio.Weight * portfolio_weights.alternative / 100
+            cash_portfolio = pd.DataFrame([['Cash USD',0]],columns = ['Asset','Weight'])
+            cash_portfolio.Weight = portfolio_weights.cash
             
-        #     st.write(metrics)
-        
+            detail_portfolio = pd.concat([bond_portfolio, equity_portfolio, alternative_portfolio,cash_portfolio])
+            # st.write(detail_portfolio)
+            
+            benchmark_portfolio = pd.DataFrame([
+                ['EuroDollars USD',portfolio_weights.bond],
+                ['ACWI USD',portfolio_weights.equity],
+                ['Multi Hedge Focus USD',portfolio_weights.alternative],
+                ['Cash USD', portfolio_weights.cash]],columns = ['Asset','Weight'])
+            
+            # st.write(benchmark_portfolio)
+            
+            # gather time series
+            ts = pd.DataFrame()
+            for i,l in detail_portfolio.iterrows():
+                asset_ts = pd.read_pickle("./Assets/"+l.Asset+" TS.pickle")
+                asset_ts.name = l.Asset
+                ts = ts.join(pd.DataFrame(asset_ts),how="outer")
+            ts_bmk = pd.DataFrame()
+            for i,l in benchmark_portfolio.iterrows():
+                asset_ts = pd.read_pickle("./Assets/"+l.Asset+" TS.pickle")
+                asset_ts.name = l.Asset
+                ts_bmk = ts_bmk.join(pd.DataFrame(asset_ts),how="outer")
+
+            pfolio_ret = pd.Series(np.dot(ts,detail_portfolio.Weight),index=ts.index,name = 'Portfolio')
+            benchmark_ret = pd.Series(np.dot(ts_bmk,benchmark_portfolio.Weight),index=ts_bmk.index,name = 'Benchmark')
+            active_ret = pfolio_ret - benchmark_ret
+            active_ret.name = 'Active'
+            
+            pfolio_ts = pd.DataFrame()
+            pfolio_ts = pfolio_ts.join(pfolio_ret.rolling(window=pfolio_ret.shape[0],min_periods=0).sum(),how="outer")
+            pfolio_ts = pfolio_ts.join(benchmark_ret.rolling(window=benchmark_ret.shape[0],min_periods=0).sum(),how="outer")
+            pfolio_ts = pfolio_ts.join(active_ret.rolling(window=active_ret.shape[0],min_periods=0).sum(),how="outer")
+            pfolio_ts.reset_index(inplace=True)
+            pfolio_ts.columns = ['Date','Portfolio','Benchmark','Active']
+            pfolio_ts.set_index("Date",inplace=True,drop=True)
+            # st.write(pfolio_ts)
+            st.write("Total Return")
+            st.line_chart(pfolio_ts)
+            
+            pfolio_metrics = pd.DataFrame(columns = ['Portfolio','Benchmark'])
+            pfolio_metrics = pd.concat([
+                pfolio_metrics,pd.DataFrame([[pfolio_ret.sum()/5,benchmark_ret.sum()/5]],
+                                            columns = ['Portfolio','Benchmark'],index=['Annual Return'])
+                                            ])
+
+            pfolio_metrics = pd.concat([
+                pfolio_metrics,pd.DataFrame([[pfolio_ret.std()*math.sqrt(52),benchmark_ret.std()*math.sqrt(52)]],
+                                            columns = ['Portfolio','Benchmark'],index=['Risk'])
+                                            ])
+
+            risk_free = ts_bmk['Cash USD'].sum() / 5
+
+            pfolio_metrics = pd.concat([
+                pfolio_metrics,pd.DataFrame([[((pfolio_ret.sum() / 5) - risk_free) / (pfolio_ret.std()*math.sqrt(52)),
+                                              ((benchmark_ret.sum() / 5) - risk_free) / (benchmark_ret.std()*math.sqrt(52))]],
+                                            columns = ['Portfolio','Benchmark'],index=['Sharpe Ratio'])
+                                            ])
+            pfolio_metrics = pd.concat([
+                pfolio_metrics,pd.DataFrame([[(pfolio_ret.sum() / 5) - (benchmark_ret.sum() / 5) ]],
+                                            columns = ['Portfolio'],index=['Active Return'])
+                                            ])
+
+            pfolio_metrics = pd.concat([
+                pfolio_metrics,pd.DataFrame([[(pfolio_ret - benchmark_ret).std() * math.sqrt(52) ]],
+                                            columns = ['Portfolio'],index=['Tracking Error'])
+                                            ])
+            
+            pfolio_metrics = pd.concat([
+                pfolio_metrics,pd.DataFrame([[((pfolio_ret.sum() / 5) - (benchmark_ret.sum() / 5)) / ((pfolio_ret - benchmark_ret).std() * math.sqrt(52)) ]],
+                                            columns = ['Portfolio'],index=['Information Ratio'])
+                                            ])
+            
+            pfolio_metrics.loc[pfolio_metrics.index.isin(['Annual Return','Risk','Active Return','Tracking Error']),:] = \
+                pfolio_metrics.loc[pfolio_metrics.index.isin(['Annual Return','Risk','Active Return','Tracking Error']),:] * 100
+            
+            pfolio_metrics = pfolio_metrics.round(decimals=2)
+            
+            st.write(pfolio_metrics)
+
+            
+            pfolio_max = pfolio_ts.rolling(window=pfolio_ts.shape[0],min_periods=0).max()
+            pfolio_dd = (pfolio_ts + 1) / (pfolio_max + 1) - 1
+            st.write("Drawdown")
+            st.line_chart(pfolio_dd)
+            
+            pfolio_metrics = pd.DataFrame(columns = ['Portfolio','Benchmark'])
+            pfolio_metrics = pd.concat([
+                pfolio_metrics,pd.DataFrame([[pfolio_dd['Portfolio'].min(),pfolio_dd['Benchmark'].min()]],
+                                            columns = ['Portfolio','Benchmark'],index=['Max Drawdown'])
+                                            ])
+            pfolio_metrics = pd.concat([
+                pfolio_metrics,pd.DataFrame([[pfolio_dd['Active'].min()]],
+                                            columns = ['Portfolio'],index=['Max Relative Drawdown'])
+                                            ])
+            
+            pfolio_metrics = pfolio_metrics * 100
+            pfolio_metrics = pfolio_metrics.round(decimals=2)
+            st.write(pfolio_metrics)
+            
+            
+            
+                                            
+
+            
+            
