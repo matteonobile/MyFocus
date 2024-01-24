@@ -138,11 +138,16 @@ with structure:
                                        selected_strategy.Alternative],
                                       index = portfolio_weights.index)
         benchmark_weights = benchmark_weights / benchmark_weights.sum()
-        
-        active_weights = portfolio_weights - benchmark_weights
+        if relative:
+            active_weights = portfolio_weights - benchmark_weights
+        else:
+            active_weights = portfolio_weights
 
         with composition:
-            st.write("Portfolio Strategic Allocation vs Risk Profile")
+            if relative:
+                st.write("Portfolio Strategic Allocation vs Risk Profile")
+            else:
+                st.write("Portfolio Strategic Allocation")
             st.bar_chart(data = active_weights)
 
 
