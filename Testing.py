@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import altair as alt
+import plotly.express as px
 import math
 
 # raw = pd.read_excel("Time Series.xlsx")
@@ -144,7 +145,17 @@ with structure:
         else:
             active_weights = portfolio_weights
 
+
+
         with composition:
+            
+            df = px.data.tips()
+            fig = px.sunburst(df, path=['day', 'time', 'sex'], values='total_bill')
+            fig.show()            
+            # Plot!
+            st.plotly_chart(fig, use_container_width=True)
+            
+            
             if relative:
                 st.write("Portfolio Strategic Allocation vs Risk Profile")
             else:
@@ -154,189 +165,197 @@ with structure:
 
             col1,col2 = st.columns(2)
             with col1:
-                full_equity = pd.DataFrame()
-                equity_df.Weight = equity_df.Weight / equity_df.Weight.sum()
-                for i,e in equity_df.iterrows():
-                    e_data = pd.read_pickle("./Assets/"+e.Asset+".pickle")
-                    e_data.Weight = e_data.Weight * e.Weight
-                    full_equity = pd.concat([full_equity,e_data])
-                # st.write(full_equity)
-                full_equity = full_equity.groupby(['ISIN','Descr','Currency','Country','Sector']).sum()
-                full_equity = full_equity / full_equity.sum()
-                full_equity = full_equity.sort_values(by='Weight',ascending=False)
-                full_equity.reset_index(inplace=True)
-                
-                largest_equity = full_equity.iloc[:10,:]
-                largest_equity = largest_equity[['Descr','Weight']]
-                st.write("Largest Equity Positions")
-                st.write(largest_equity)
-                # st.write(full_equity)
-                
-                bmk_equity = pd.read_pickle("./Assets/ACWI USD.pickle")
-                bmk_equity.Weight = bmk_equity.Weight / bmk_equity.Weight.sum()
-                
-                # Sectors
-                equity_sectors = full_equity[['Sector','Weight']].groupby("Sector").sum()
-                equity_sectors.columns = ['Port']
-                bmk_sectors = bmk_equity[['Sector','Weight']].groupby("Sector").sum()
-                bmk_sectors.columns = ['Bmk']
-                
-                all_sectors = equity_sectors.join(bmk_sectors,how="outer")
-                all_sectors.fillna(0,inplace=True)
-                if relative:
-                    active_sectors = all_sectors['Port'] - all_sectors['Bmk']
-                    st.write("Sector Active Allocation")
-                else:
-                    active_sectors = all_sectors['Port']
-                    st.write("Sector Allocation")
-                active_sectors.sort_values(ascending=False)
-                
-                st.bar_chart(data=active_sectors)
-                
-                # Countries
-                equity_country = full_equity[['Country','Weight']].groupby("Country").sum()
-                equity_country.columns = ['Port']
-                bmk_country = bmk_equity[['Country','Weight']].groupby("Country").sum()
-                bmk_country.columns = ['Bmk']
-                all_country = equity_country.join(bmk_country,how='outer')
-                all_country.fillna(0,inplace=True)
-                if relative:
-                    active_country = all_country['Port'] - all_country['Bmk']
-                else:
-                    active_country = all_country['Port']
-                active_country = active_country.astype(float)
-                active_country = active_country.sort_values(ascending=False)
-                if relative:
-                    active_country = pd.concat([active_country.iloc[:5],active_country.iloc[-5:]])
-                    st.write("Country Active Allocation (10 largest deviations)")
-                else:
-                    active_country = active_country[:10]
-                    st.write("Largest Country Exposures")
-                st.bar_chart(data=active_country,x=None)
+                if equity_df.Weight.sum() > 0:
+                    full_equity = pd.DataFrame()
+                    equity_df.Weight = equity_df.Weight / equity_df.Weight.sum()
+                    for i,e in equity_df.iterrows():
+                        e_data = pd.read_pickle("./Assets/"+e.Asset+".pickle")
+                        e_data.Weight = e_data.Weight * e.Weight
+                        if full_equity.shape[0] == 0:
+                            full_equity = e_data.copy()
+                        else:
+                            full_equity = pd.concat([full_equity,e_data])
+                    # st.write(full_equity)
+                    full_equity = full_equity.groupby(['ISIN','Descr','Currency','Country','Sector']).sum()
+                    full_equity = full_equity / full_equity.sum()
+                    full_equity = full_equity.sort_values(by='Weight',ascending=False)
+                    full_equity.reset_index(inplace=True)
+                    
+                    largest_equity = full_equity.iloc[:10,:]
+                    largest_equity = largest_equity[['Descr','Weight']]
+                    st.write("Largest Equity Positions")
+                    st.write(largest_equity)
+                    # st.write(full_equity)
+                    
+                    bmk_equity = pd.read_pickle("./Assets/ACWI USD.pickle")
+                    bmk_equity.Weight = bmk_equity.Weight / bmk_equity.Weight.sum()
+                    
+                    # Sectors
+                    equity_sectors = full_equity[['Sector','Weight']].groupby("Sector").sum()
+                    equity_sectors.columns = ['Port']
+                    bmk_sectors = bmk_equity[['Sector','Weight']].groupby("Sector").sum()
+                    bmk_sectors.columns = ['Bmk']
+                    
+                    all_sectors = equity_sectors.join(bmk_sectors,how="outer")
+                    all_sectors.fillna(0,inplace=True)
+                    if relative:
+                        active_sectors = all_sectors['Port'] - all_sectors['Bmk']
+                        st.write("Sector Active Allocation")
+                    else:
+                        active_sectors = all_sectors['Port']
+                        st.write("Sector Allocation")
+                    active_sectors.sort_values(ascending=False)
+                    
+                    st.bar_chart(data=active_sectors)
+                    
+                    # Countries
+                    equity_country = full_equity[['Country','Weight']].groupby("Country").sum()
+                    equity_country.columns = ['Port']
+                    bmk_country = bmk_equity[['Country','Weight']].groupby("Country").sum()
+                    bmk_country.columns = ['Bmk']
+                    all_country = equity_country.join(bmk_country,how='outer')
+                    all_country.fillna(0,inplace=True)
+                    if relative:
+                        active_country = all_country['Port'] - all_country['Bmk']
+                    else:
+                        active_country = all_country['Port']
+                    active_country = active_country.astype(float)
+                    active_country = active_country.sort_values(ascending=False)
+                    if relative:
+                        active_country = pd.concat([active_country.iloc[:5],active_country.iloc[-5:]])
+                        st.write("Country Active Allocation (10 largest deviations)")
+                    else:
+                        active_country = active_country[:10]
+                        st.write("Largest Country Exposures")
+                    st.bar_chart(data=active_country,x=None)
 
 #####################################################################
 
             with col2:
                 # let's go for bonds now            
-                full_bond = pd.DataFrame()
-                bond_df.Weight = bond_df.Weight / bond_df.Weight.sum()
-                for i,b in bond_df.iterrows():
-                    b_data = pd.read_pickle("./Assets/"+b.Asset+".pickle")
-                    b_data.Weight = b_data.Weight * e.Weight
-                    full_bond = pd.concat([full_bond,b_data])
-                # st.write(full_equity)
-                full_bond = full_bond.groupby(['ISIN','Descr','Currency','Country','Sector','Rating','Duration','Yield']).sum()
-                full_bond = full_bond / full_bond.sum()
-                full_bond = full_bond.sort_values(by='Weight',ascending=False)
-                full_bond.reset_index(inplace=True)
-                
-                largest_bond = full_bond.iloc[:10,:].copy()
-                largest_bond = largest_bond[['Descr','Rating','Duration','Yield','Weight']]
-                st.write("Largest Bond Positions")
-                st.write(largest_bond)
-                # st.write(full_equity)
-                
-                bmk_bond = pd.read_pickle("./Assets/EuroDollars USD.pickle")
-                bmk_bond.Weight = bmk_bond.Weight / bmk_bond.Weight.sum()
-                
-                
-                # duration bucket allocation
-                
-                def duration_bucket(df):
-                    df['Bucket'] = '1+'
-                    df.loc[(df.Duration>=0) & (df.Duration<3),'Bucket'] = '0-3'
-                    df.loc[(df.Duration>=3) & (df.Duration<5),'Bucket'] = '3-5'
-                    df.loc[(df.Duration>=5) & (df.Duration<7),'Bucket'] = '5-7'
-                    df.loc[(df.Duration>=7) & (df.Duration<10),'Bucket'] = '7-10'
-                    df.loc[(df.Duration>=10),'Bucket'] = '10+'
-                    return df
-                
-                full_bond = duration_bucket(full_bond)
-                
-                bmk_bond = duration_bucket(bmk_bond)
-                # st.write(bmk_bond)
-                # Duration Bucket
-                bond_duration = full_bond[['Bucket','Weight']].groupby("Bucket").sum()
-                bond_duration.columns = ['Port']
-                bmk_duration = bmk_bond[['Bucket','Weight']].groupby("Bucket").sum()
-                bmk_duration.columns = ['Bmk']
-                all_duration = bond_duration.join(bmk_duration,how='outer')
-                all_duration.fillna(0,inplace=True)
-                
-                if relative:
-                    active_duration = all_duration['Port'] - all_duration['Bmk']
-                    st.write("Active Duration Exposure")
-                else:
-                    active_duration = all_duration['Port']
-                    st.write("Duration Exposure")
-                active_duration = active_duration.astype(float)
-                active_duration = active_duration.sort_values(ascending=False)
-                # active_duration = pd.concat([active_duration.iloc[:5],active_duration.iloc[-5:]])
-                
-                st.bar_chart(data=active_duration,x=None)
-    
-                # rating allocation
-                bond_rating = full_bond[['Rating','Weight']].groupby("Rating").sum()
-                bond_rating.columns = ['Port']
-                bmk_rating = bmk_bond[['Rating','Weight']].groupby("Rating").sum()
-                bmk_rating.columns = ['Bmk']
-                all_rating = bond_rating.join(bmk_rating,how='outer')
-                all_rating.fillna(0,inplace=True)
-                
-                if relative:
-                    active_rating = all_rating['Port'] - all_rating['Bmk']
-                    st.write("Active Rating Exposure")
-                else:
-                    active_rating = all_rating['Port']
-                    st.write("Rating Exposure")
-                active_rating = active_rating.astype(float)
-                active_rating = active_rating.sort_values(ascending=False)
-                # active_duration = pd.concat([active_duration.iloc[:5],active_duration.iloc[-5:]])
-                
-                st.bar_chart(data=active_rating,x=None)
-    
-                # country allocation
-                bond_country = full_bond[['Country','Weight']].groupby("Country").sum()
-                bond_country.columns = ['Port']
-                bmk_country = bmk_bond[['Country','Weight']].groupby("Country").sum()
-                bmk_country.columns = ['Bmk']
-                all_country = bond_country.join(bmk_country,how='outer')
-                all_country.fillna(0,inplace=True)
-                
-                if relative:
-                    active_country = all_country['Port'] - all_country['Bmk']
-                    st.write("Active Country Exposure")
-                else:
-                    active_country = all_country['Port'] 
-                    st.write("Country Exposure")
-                active_country = active_country.astype(float)
-                active_country = active_country.sort_values(ascending=False)
-                if relative:
-                    active_country = pd.concat([active_country.iloc[:5],active_country.iloc[-5:]])
-                else:
-                    active_country = active_country[:10]
-                
-                st.bar_chart(data=active_country,x=None)
-    
-                # sector allocation
-                bond_sector = full_bond[['Sector','Weight']].groupby("Sector").sum()
-                bond_sector.columns = ['Port']
-                bmk_sector = bmk_bond[['Sector','Weight']].groupby("Sector").sum()
-                bmk_sector.columns = ['Bmk']
-                all_sector = bond_sector.join(bmk_sector,how='outer')
-                all_sector.fillna(0,inplace=True)
-                
-                if relative:
-                    active_sector = all_sector['Port'] - all_sector['Bmk']
-                    st.write("Active Sector Exposure")
-                else:
-                    active_sector = all_sector['Port']
-                    st.write("Sector Exposure")
-                active_sector = active_sector.astype(float)
-                active_sector = active_sector.sort_values(ascending=False)
-                # active_sector = pd.concat([active_sector.iloc[:5],active_sector.iloc[-5:]])
-                
-                st.bar_chart(data=active_sector,x=None)
+                if bond_df.Weight.sum() > 0:
+                    full_bond = pd.DataFrame()
+                    bond_df.Weight = bond_df.Weight / bond_df.Weight.sum()
+                    for i,b in bond_df.iterrows():
+                        b_data = pd.read_pickle("./Assets/"+b.Asset+".pickle")
+                        b_data.Weight = b_data.Weight * e.Weight
+                        if full_bond.shape[0] == 0:
+                            full_bond = b_data.copy()
+                        else:
+                            full_bond = pd.concat([full_bond,b_data])
+                    # st.write(full_equity)
+                    full_bond = full_bond.groupby(['ISIN','Descr','Currency','Country','Sector','Rating','Duration','Yield']).sum()
+                    full_bond = full_bond / full_bond.sum()
+                    full_bond = full_bond.sort_values(by='Weight',ascending=False)
+                    full_bond.reset_index(inplace=True)
+                    
+                    largest_bond = full_bond.iloc[:10,:].copy()
+                    largest_bond = largest_bond[['Descr','Rating','Duration','Yield','Weight']]
+                    st.write("Largest Bond Positions")
+                    st.write(largest_bond)
+                    # st.write(full_equity)
+                    
+                    bmk_bond = pd.read_pickle("./Assets/EuroDollars USD.pickle")
+                    bmk_bond.Weight = bmk_bond.Weight / bmk_bond.Weight.sum()
+                    
+                    
+                    # duration bucket allocation
+                    
+                    def duration_bucket(df):
+                        df['Bucket'] = '1+'
+                        df.loc[(df.Duration>=0) & (df.Duration<3),'Bucket'] = '0-3'
+                        df.loc[(df.Duration>=3) & (df.Duration<5),'Bucket'] = '3-5'
+                        df.loc[(df.Duration>=5) & (df.Duration<7),'Bucket'] = '5-7'
+                        df.loc[(df.Duration>=7) & (df.Duration<10),'Bucket'] = '7-10'
+                        df.loc[(df.Duration>=10),'Bucket'] = '10+'
+                        return df
+                    
+                    full_bond = duration_bucket(full_bond)
+                    
+                    bmk_bond = duration_bucket(bmk_bond)
+                    # st.write(bmk_bond)
+                    # Duration Bucket
+                    bond_duration = full_bond[['Bucket','Weight']].groupby("Bucket").sum()
+                    bond_duration.columns = ['Port']
+                    bmk_duration = bmk_bond[['Bucket','Weight']].groupby("Bucket").sum()
+                    bmk_duration.columns = ['Bmk']
+                    all_duration = bond_duration.join(bmk_duration,how='outer')
+                    all_duration.fillna(0,inplace=True)
+                    
+                    if relative:
+                        active_duration = all_duration['Port'] - all_duration['Bmk']
+                        st.write("Active Duration Exposure")
+                    else:
+                        active_duration = all_duration['Port']
+                        st.write("Duration Exposure")
+                    active_duration = active_duration.astype(float)
+                    active_duration = active_duration.sort_values(ascending=False)
+                    # active_duration = pd.concat([active_duration.iloc[:5],active_duration.iloc[-5:]])
+                    
+                    st.bar_chart(data=active_duration,x=None)
+        
+                    # rating allocation
+                    bond_rating = full_bond[['Rating','Weight']].groupby("Rating").sum()
+                    bond_rating.columns = ['Port']
+                    bmk_rating = bmk_bond[['Rating','Weight']].groupby("Rating").sum()
+                    bmk_rating.columns = ['Bmk']
+                    all_rating = bond_rating.join(bmk_rating,how='outer')
+                    all_rating.fillna(0,inplace=True)
+                    
+                    if relative:
+                        active_rating = all_rating['Port'] - all_rating['Bmk']
+                        st.write("Active Rating Exposure")
+                    else:
+                        active_rating = all_rating['Port']
+                        st.write("Rating Exposure")
+                    active_rating = active_rating.astype(float)
+                    active_rating = active_rating.sort_values(ascending=False)
+                    # active_duration = pd.concat([active_duration.iloc[:5],active_duration.iloc[-5:]])
+                    
+                    st.bar_chart(data=active_rating,x=None)
+        
+                    # country allocation
+                    bond_country = full_bond[['Country','Weight']].groupby("Country").sum()
+                    bond_country.columns = ['Port']
+                    bmk_country = bmk_bond[['Country','Weight']].groupby("Country").sum()
+                    bmk_country.columns = ['Bmk']
+                    all_country = bond_country.join(bmk_country,how='outer')
+                    all_country.fillna(0,inplace=True)
+                    
+                    if relative:
+                        active_country = all_country['Port'] - all_country['Bmk']
+                        st.write("Active Country Exposure")
+                    else:
+                        active_country = all_country['Port'] 
+                        st.write("Country Exposure")
+                    active_country = active_country.astype(float)
+                    active_country = active_country.sort_values(ascending=False)
+                    if relative:
+                        active_country = pd.concat([active_country.iloc[:5],active_country.iloc[-5:]])
+                    else:
+                        active_country = active_country[:10]
+                    
+                    st.bar_chart(data=active_country,x=None)
+        
+                    # sector allocation
+                    bond_sector = full_bond[['Sector','Weight']].groupby("Sector").sum()
+                    bond_sector.columns = ['Port']
+                    bmk_sector = bmk_bond[['Sector','Weight']].groupby("Sector").sum()
+                    bmk_sector.columns = ['Bmk']
+                    all_sector = bond_sector.join(bmk_sector,how='outer')
+                    all_sector.fillna(0,inplace=True)
+                    
+                    if relative:
+                        active_sector = all_sector['Port'] - all_sector['Bmk']
+                        st.write("Active Sector Exposure")
+                    else:
+                        active_sector = all_sector['Port']
+                        st.write("Sector Exposure")
+                    active_sector = active_sector.astype(float)
+                    active_sector = active_sector.sort_values(ascending=False)
+                    # active_sector = pd.concat([active_sector.iloc[:5],active_sector.iloc[-5:]])
+                    
+                    st.bar_chart(data=active_sector,x=None)
                 
             
         with metrics:        
@@ -395,10 +414,9 @@ with structure:
             st.line_chart(pfolio_ts)
             
             pfolio_metrics = pd.DataFrame(columns = ['Portfolio','Benchmark'])
-            pfolio_metrics = pd.concat([
-                pfolio_metrics,pd.DataFrame([[pfolio_ret.sum()/5,benchmark_ret.sum()/5]],
+            pfolio_metrics = pd.DataFrame([[pfolio_ret.sum()/5,benchmark_ret.sum()/5]],
                                             columns = ['Portfolio','Benchmark'],index=['Annual Return'])
-                                            ])
+                                          
 
             pfolio_metrics = pd.concat([
                 pfolio_metrics,pd.DataFrame([[pfolio_ret.std()*math.sqrt(52),benchmark_ret.std()*math.sqrt(52)]],
