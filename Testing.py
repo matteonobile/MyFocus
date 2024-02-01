@@ -25,7 +25,7 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
 st.set_page_config(layout="wide")
 
-st.header("EFG Asset Management - Portfolio Construction Tool", divider=True)
+st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240201 10:43", divider=True)
 st.sidebar.header("Portfolio")
 
 risk_profile = st.sidebar.selectbox(
