@@ -188,6 +188,7 @@ with structure:
                 st.columns(1)
 
                 st.write("Portfolio Strategic Allocation vs Risk Profile")
+                active_weights = active_weights * 100
                 st.bar_chart(data = active_weights)
 
 
