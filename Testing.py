@@ -24,8 +24,10 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
 st.set_page_config(layout="wide")
 
-st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240201 15:06", divider=True)
+st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240201 21:29", divider=True)
 st.sidebar.header("Portfolio")
+
+st.sidebar.number_input("Size of portfolio",min_value = 5000000,value=50000000)
 
 risk_profile = st.sidebar.selectbox(
     'Risk Profile',
@@ -50,20 +52,35 @@ structure, composition, metrics = st.tabs(['Structure','Composition','Metrics'])
 
 with structure:
     with st.container():
-        cash = st.slider("Cash",0,100,risk_profiles[risk_profiles.Strategy==risk_profile].iloc[0,:].Cash)
+        cash = st.slider("Cash",0,50,risk_profiles[risk_profiles.Strategy==risk_profile].iloc[0,:].Cash)
         bond = st.slider("Bond",0,100,risk_profiles[risk_profiles.Strategy==risk_profile].iloc[0,:].Bond)
-        equity = st.slider("Equity",0,100,risk_profiles[risk_profiles.Strategy==risk_profile].iloc[0,:].Equity)
-        alternative = st.slider("Alternative",0,100,risk_profiles[risk_profiles.Strategy==risk_profile].iloc[0,:].Alternative)
-            
-    equity_selection = st.multiselect(
-        'Pick your equity components',
-        assets[(assets.Currency == currency) & (assets.Type=='Equity')],default = 'ACWI USD')
+        max_equity = risk_profiles[risk_profiles.Strategy==risk_profile].iloc[0,:]['Max Equity']
+        if max_equity == 0:
+            equity = 0
+        else:
+            equity = st.slider("Equity",0,max_equity,risk_profiles[risk_profiles.Strategy==risk_profile].iloc[0,:].Equity)
+        max_alternative = risk_profiles[risk_profiles.Strategy==risk_profile].iloc[0,:]['Max Alterrnative']
+        if max_alternative == 0:
+            alternative = 0
+        else:
+            alternative = st.slider("Alternative",0,risk_profiles[risk_profiles.Strategy==risk_profile].iloc[0,:]['Max Alterrnative'],risk_profiles[risk_profiles.Strategy==risk_profile].iloc[0,:].Alternative)
+    
+    if equity > 0:
+        equity_selection = st.multiselect(
+            'Pick your equity components',
+            assets[(assets.Currency == currency) & (assets.Type=='Equity')],default = 'ACWI USD')
+    else:    
+        equity_selection = []
+    
     bond_selection = st.multiselect(
         'Pick your bond components',
         assets[(assets.Currency == currency) & (assets.Type=='Bond')],default='EuroDollars USD')
-    alternative_selection = st.multiselect(
-        'Pick your alternatives',
-        assets[(assets.Currency == currency) & (assets.Type=='Alternative')], default = 'Multi Hedge Focus USD')
+    if alternative > 0:
+        alternative_selection = st.multiselect(
+            'Pick your alternatives',
+            assets[(assets.Currency == currency) & (assets.Type=='Alternative')], default = 'Multi Hedge Focus USD')
+    else:
+        alternative_selection = []
 
     if len(equity_selection) > 0:
         equity_df = pd.DataFrame(equity_selection)
@@ -83,7 +100,9 @@ with structure:
             },
             hide_index=True,
         )
-
+    else:
+        equity_df = pd.DataFrame([['ACWI USD',0]],columns=['Asset','Weight'])
+    
     if len(bond_selection) > 0:
         bond_df = pd.DataFrame(bond_selection)
         bond_df.columns = ['Asset']
@@ -121,7 +140,9 @@ with structure:
             },
             hide_index=True,
         )
-
+    else:
+        alternative_df = pd.DataFrame([['Multi Hedge Focus USD',0]],columns = ['Asset','Weight'])
+    
    
     if st.sidebar.button('Calc'):
         portfolio_weights = pd.Series([cash,bond,equity,alternative],
@@ -154,6 +175,7 @@ with structure:
             with col1:
                 source = portfolio_weights.reset_index()
                 source.columns = ['Class','Weight']
+                source = source[source.Weight > 0]
             # st.write(source)
                 base = alt.Chart(source).encode(
                     alt.Theta("Weight:Q").stack(True),
@@ -175,6 +197,7 @@ with structure:
                 source = detail_portfolio.reset_index()
                 # st.dataframe(source)
                 source = source[['Asset','Weight']]
+                source = source[source.Weight > 0]
             # st.write(source)
                 base = alt.Chart(source).encode(
                     alt.Theta("Weight:Q").stack(True),
@@ -270,7 +293,7 @@ with structure:
                     bond_df.Weight = bond_df.Weight / bond_df.Weight.sum()
                     for i,b in bond_df.iterrows():
                         b_data = pd.read_pickle("./Assets/"+b.Asset+".pickle")
-                        b_data.Weight = b_data.Weight * e.Weight
+                        b_data.Weight = b_data.Weight * b.Weight
                         if full_bond.shape[0] == 0:
                             full_bond = b_data.copy()
                         else:
