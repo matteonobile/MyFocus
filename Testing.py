@@ -24,7 +24,7 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
 st.set_page_config(layout="wide")
 
-st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240201 10:45", divider=True)
+st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240201 15:06", divider=True)
 st.sidebar.header("Portfolio")
 
 risk_profile = st.sidebar.selectbox(
@@ -148,12 +148,47 @@ with structure:
 
         with composition:
             
-            
+
+            st.write("Portfolio Strategic Allocation")
+            col1,col2 = st.columns(2)
+            with col1:
+                source = portfolio_weights.reset_index()
+                source.columns = ['Class','Weight']
+            # st.write(source)
+                base = alt.Chart(source).encode(
+                    alt.Theta("Weight:Q").stack(True),
+                    alt.Color("Class:N").legend(None))
+                pie = base.mark_arc(outerRadius=120,innerRadius=60)
+                text = base.mark_text(radius=140, size=20).encode(text="Class:N")
+                st.altair_chart(pie + text,use_container_width=True)
+            with col2:
+                bond_portfolio = bond_df.copy()
+                bond_portfolio.Weight = bond_portfolio.Weight * portfolio_weights.bond
+                equity_portfolio = equity_df.copy()
+                equity_portfolio.Weight = equity_portfolio.Weight * portfolio_weights.equity
+                alternative_portfolio = alternative_df.copy()
+                alternative_portfolio.Weight = alternative_portfolio.Weight * portfolio_weights.alternative
+                cash_portfolio = pd.DataFrame([['Cash USD',cash*100]],columns = ['Asset','Weight'])
+                cash_portfolio.Weight = portfolio_weights.cash * 100
+                
+                detail_portfolio = pd.concat([bond_portfolio, equity_portfolio, alternative_portfolio,cash_portfolio])
+                source = detail_portfolio.reset_index()
+                # st.dataframe(source)
+                source = source[['Asset','Weight']]
+            # st.write(source)
+                base = alt.Chart(source).encode(
+                    alt.Theta("Weight:Q").stack(True),
+                    alt.Color("Asset:N").legend(None))
+                pie = base.mark_arc(outerRadius=120,innerRadius=60)
+                text = base.mark_text(radius=140, size=20).encode(text="Asset:N")
+                st.altair_chart(pie + text,use_container_width=True)
+                                                    
+
             if relative:
+                st.columns(1)
+
                 st.write("Portfolio Strategic Allocation vs Risk Profile")
-            else:
-                st.write("Portfolio Strategic Allocation")
-            st.bar_chart(data = active_weights)
+                st.bar_chart(data = active_weights)
 
 
             col1,col2 = st.columns(2)
@@ -170,18 +205,19 @@ with structure:
                             full_equity = pd.concat([full_equity,e_data])
                     # st.write(full_equity)
                     full_equity = full_equity.groupby(['ISIN','Descr','Currency','Country','Sector']).sum()
-                    full_equity = full_equity / full_equity.sum()
+                    full_equity = full_equity / full_equity.sum() * 100
+                    full_equity = full_equity.round(decimals=1)
                     full_equity = full_equity.sort_values(by='Weight',ascending=False)
                     full_equity.reset_index(inplace=True)
                     
                     largest_equity = full_equity.iloc[:10,:]
                     largest_equity = largest_equity[['Descr','Weight']]
                     st.write("Largest Equity Positions")
-                    st.write(largest_equity)
+                    st.dataframe(largest_equity,hide_index=True)
                     # st.write(full_equity)
                     
                     bmk_equity = pd.read_pickle("./Assets/ACWI USD.pickle")
-                    bmk_equity.Weight = bmk_equity.Weight / bmk_equity.Weight.sum()
+                    bmk_equity.Weight = bmk_equity.Weight / bmk_equity.Weight.sum() * 100
                     
                     # Sectors
                     equity_sectors = full_equity[['Sector','Weight']].groupby("Sector").sum()
@@ -191,6 +227,8 @@ with structure:
                     
                     all_sectors = equity_sectors.join(bmk_sectors,how="outer")
                     all_sectors.fillna(0,inplace=True)
+                    all_sectors = all_sectors[all_sectors.index!='--']
+                    # st.write(all_sectors)
                     if relative:
                         active_sectors = all_sectors['Port'] - all_sectors['Bmk']
                         st.write("Sector Active Allocation")
@@ -241,15 +279,16 @@ with structure:
                     full_bond = full_bond / full_bond.sum()
                     full_bond = full_bond.sort_values(by='Weight',ascending=False)
                     full_bond.reset_index(inplace=True)
-                    
+                    # st.write(full_bond[:10])
+                    full_bond.Weight = (full_bond.Weight * 100).round(decimals=1)
                     largest_bond = full_bond.iloc[:10,:].copy()
                     largest_bond = largest_bond[['Descr','Rating','Duration','Yield','Weight']]
                     st.write("Largest Bond Positions")
-                    st.write(largest_bond)
+                    st.dataframe(largest_bond,hide_index=True)
                     # st.write(full_equity)
                     
                     bmk_bond = pd.read_pickle("./Assets/EuroDollars USD.pickle")
-                    bmk_bond.Weight = bmk_bond.Weight / bmk_bond.Weight.sum()
+                    bmk_bond.Weight = bmk_bond.Weight / bmk_bond.Weight.sum() * 100
                     
                     
                     # duration bucket allocation
@@ -261,6 +300,7 @@ with structure:
                         df.loc[(df.Duration>=5) & (df.Duration<7),'Bucket'] = '5-7'
                         df.loc[(df.Duration>=7) & (df.Duration<10),'Bucket'] = '7-10'
                         df.loc[(df.Duration>=10),'Bucket'] = '10+'
+                        df = df[df.Bucket != '1+']
                         return df
                     
                     full_bond = duration_bucket(full_bond)
@@ -368,7 +408,7 @@ with structure:
             cash_portfolio.Weight = portfolio_weights.cash
             
             detail_portfolio = pd.concat([bond_portfolio, equity_portfolio, alternative_portfolio,cash_portfolio])
-            # st.write(detail_portfolio)
+            # st.dataframe(detail_portfolio)
             
             benchmark_portfolio = pd.DataFrame([
                 ['EuroDollars USD',portfolio_weights.bond],
@@ -398,9 +438,9 @@ with structure:
             pfolio_ts = pd.DataFrame()
             pfolio_ts = pfolio_ts.join(pfolio_ret.rolling(window=pfolio_ret.shape[0],min_periods=0).sum(),how="outer")
             pfolio_ts = pfolio_ts.join(benchmark_ret.rolling(window=benchmark_ret.shape[0],min_periods=0).sum(),how="outer")
-            pfolio_ts = pfolio_ts.join(active_ret.rolling(window=active_ret.shape[0],min_periods=0).sum(),how="outer")
+            # pfolio_ts = pfolio_ts.join(active_ret.rolling(window=active_ret.shape[0],min_periods=0).sum(),how="outer")
             pfolio_ts.reset_index(inplace=True)
-            pfolio_ts.columns = ['Date','Portfolio','Benchmark','Active']
+            pfolio_ts.columns = ['Date','Portfolio','Benchmark']
             pfolio_ts.set_index("Date",inplace=True,drop=True)
             # st.write(pfolio_ts)
             st.write("Total Return")
@@ -475,10 +515,10 @@ with structure:
                 pfolio_metrics,pd.DataFrame([[pfolio_dd['Portfolio'].min(),pfolio_dd['Benchmark'].min()]],
                                             columns = ['Portfolio','Benchmark'],index=['Max Drawdown'])
                                             ])
-            pfolio_metrics = pd.concat([
-                pfolio_metrics,pd.DataFrame([[pfolio_dd['Active'].min()]],
-                                            columns = ['Portfolio'],index=['Max Relative Drawdown'])
-                                            ])
+            # pfolio_metrics = pd.concat([
+            #     pfolio_metrics,pd.DataFrame([[pfolio_dd['Active'].min()]],
+            #                                 columns = ['Portfolio'],index=['Max Relative Drawdown'])
+            #                                 ])
             
             pfolio_metrics = pfolio_metrics * 100
             pfolio_metrics = pfolio_metrics.round(decimals=2)
@@ -496,7 +536,7 @@ with structure:
             c = (
                 alt.Chart(ef)
                 .mark_circle()
-                .encode(alt.X("Risk").scale(zero=False),alt.Y("Return").scale(zero=False),color="Color",size='Size')
+                .encode(alt.X("Risk").scale(zero=False),alt.Y("Return").scale(zero=False),color="Color",size=alt.Size('Size',legend=None))
                 )
             st.write("Historical Efficient Frontier on benchmark indices")
             st.altair_chart(c,use_container_width=True)
