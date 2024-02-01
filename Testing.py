@@ -10,7 +10,6 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import altair as alt
-import plotly.express as px
 import math
 
 # raw = pd.read_excel("Time Series.xlsx")
@@ -25,7 +24,7 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
 st.set_page_config(layout="wide")
 
-st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240201 10:43", divider=True)
+st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240201 10:45", divider=True)
 st.sidebar.header("Portfolio")
 
 risk_profile = st.sidebar.selectbox(
@@ -148,12 +147,6 @@ with structure:
 
 
         with composition:
-            
-            df = px.data.tips()
-            fig = px.sunburst(df, path=['day', 'time', 'sex'], values='total_bill')
-            fig.show()            
-            # Plot!
-            st.plotly_chart(fig, use_container_width=True)
             
             
             if relative:
