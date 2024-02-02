@@ -28,7 +28,8 @@ st.set_page_config(layout="wide")
 st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240202 12:06", divider=True)
 st.sidebar.header("Portfolio")
 
-total_amount = st.sidebar.number_input("Size of portfolio",min_value = 5000000,value=50000000)
+total_amount = st.sidebar.number_input("Size of portfolio in mio",min_value = 5,value=50)
+total_amount = total_amount * 1000000
 
 risk_profile = st.sidebar.selectbox(
     'Risk Profile',
