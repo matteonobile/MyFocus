@@ -11,6 +11,7 @@ import numpy as np
 import streamlit as st
 import altair as alt
 import math
+from sklearn.linear_model import LinearRegression
 
 # raw = pd.read_excel("Time Series.xlsx")
 # raw.Date = pd.to_datetime(raw.Date)
@@ -24,7 +25,7 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
 st.set_page_config(layout="wide")
 
-st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240201 21:29", divider=True)
+st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240202 05:35", divider=True)
 st.sidebar.header("Portfolio")
 
 st.sidebar.number_input("Size of portfolio",min_value = 5000000,value=50000000)
@@ -502,11 +503,25 @@ with structure:
                                             columns = ['Portfolio'],index=['Information Ratio'])
                                             ])
 
-            A = np.vstack([benchmark_ret.values, np.ones(pfolio_ret.shape[0])]).T
-            y = pfolio_ret.values
+
+
+            A = pd.DataFrame(benchmark_ret).fillna(0)
+            y = pfolio_ret.fillna(0)
             
-            beta , alpha = np.linalg.lstsq(A,y,rcond=None)[0]
-            alpha = alpha * 52
+            lr = LinearRegression()
+            lr.fit(A,y)
+            
+            beta = lr.coef_[0]
+            alpha = lr.intercept_ * 52
+            
+            # st.write("Benchmark Shape",benchmark_ret.shape)
+            # st.write("portfolio Shape",pfolio_ret.shape)
+
+            # A = np.vstack([benchmark_ret.values, np.ones(pfolio_ret.shape[0])]).T
+            # y = pfolio_ret.values
+            
+            # beta , alpha = np.linalg.lstsq(A,y,rcond=None)[0]
+            # alpha = alpha * 52
 
             pfolio_metrics = pd.concat([
                 pfolio_metrics,pd.DataFrame([[beta]],
