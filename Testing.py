@@ -25,10 +25,10 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
 st.set_page_config(layout="wide")
 
-st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240202 05:35", divider=True)
+st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240202 10:47", divider=True)
 st.sidebar.header("Portfolio")
 
-st.sidebar.number_input("Size of portfolio",min_value = 5000000,value=50000000)
+total_amount = st.sidebar.number_input("Size of portfolio",min_value = 5000000,value=50000000)
 
 risk_profile = st.sidebar.selectbox(
     'Risk Profile',
@@ -166,10 +166,41 @@ with structure:
         else:
             active_weights = portfolio_weights
 
+# checking minimum investment
+        bond_portfolio = bond_df.copy()
+        bond_portfolio.Weight = bond_portfolio.Weight * portfolio_weights.bond
+        equity_portfolio = equity_df.copy()
+        equity_portfolio.Weight = equity_portfolio.Weight * portfolio_weights.equity
+        alternative_portfolio = alternative_df.copy()
+        alternative_portfolio.Weight = alternative_portfolio.Weight * portfolio_weights.alternative
+        cash_portfolio = pd.DataFrame([['Cash USD',cash*100]],columns = ['Asset','Weight'])
+        cash_portfolio.Weight = portfolio_weights.cash * 100
+        
+        detail_portfolio = pd.concat([bond_portfolio, equity_portfolio, alternative_portfolio,cash_portfolio])
+
+        # st.dataframe(assets)
+
+        exception = pd.DataFrame()
+
+        for i,e in detail_portfolio.iterrows():
+            amount_invested = e.Weight * total_amount / 100
+            min_invested = assets[assets.Assets == e.Asset].iloc[0,6] # min capital
+            # st.write(e.Asset, "is invested with", amount_invested, "vs ", min_invested)
+            
+            if (amount_invested < min_invested ) & (amount_invested > 0):
+                if exception.shape[0] > 0:
+                    exception = pd.concat([exception,pd.DataFrame([[e.Asset,amount_invested, min_invested]],columns = ['Asset','Invested','Min Required'])])
+                else:
+                    exception = pd.DataFrame([[e.Asset,amount_invested, min_invested]],columns = ['Asset','Invested','Min Required'])
+            
+
+
 
 
         with composition:
-            
+            if exception.shape[0] > 0:
+                st.write("Following modules are likely invested using funds")
+                st.dataframe(exception,hide_index=True)
 
             st.write("Portfolio Strategic Allocation")
             col1,col2 = st.columns(2)
