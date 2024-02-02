@@ -549,11 +549,10 @@ with structure:
             st.write("Drawdown")
             st.line_chart(pfolio_dd)
             
-            pfolio_metrics = pd.DataFrame(columns = ['Portfolio','Benchmark'])
-            pfolio_metrics = pd.concat([
-                pfolio_metrics,pd.DataFrame([[pfolio_dd['Portfolio'].min(),pfolio_dd['Benchmark'].min()]],
+            # pfolio_metrics = pd.DataFrame(columns = ['Portfolio','Benchmark'])
+            pfolio_metrics = pd.DataFrame([[pfolio_dd['Portfolio'].min(),pfolio_dd['Benchmark'].min()]],
                                             columns = ['Portfolio','Benchmark'],index=['Max Drawdown'])
-                                            ])
+                                            
             # pfolio_metrics = pd.concat([
             #     pfolio_metrics,pd.DataFrame([[pfolio_dd['Active'].min()]],
             #                                 columns = ['Portfolio'],index=['Max Relative Drawdown'])
