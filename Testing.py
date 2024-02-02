@@ -25,7 +25,7 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
 st.set_page_config(layout="wide")
 
-st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240202 12:06", divider=True)
+st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240202 14:06", divider=True)
 st.sidebar.header("Portfolio")
 
 total_amount = st.sidebar.number_input("Size of portfolio in mio",min_value = 5,value=50)
@@ -164,7 +164,7 @@ with structure:
     
     final_portfolio = pd.DataFrame()
     for i,e in detail_portfolio.iterrows():
-        e['Amount Invested'] = e.Weight * total_amount / 100
+        e['Amount Invested'] = round(e.Weight * total_amount / 100,0)
         e['Min Invested'] = assets[assets.Assets == e.Asset].iloc[0,6] # min capital
         # st.dataframe(e)
         if e['Amount Invested'] > 0:
@@ -174,7 +174,8 @@ with structure:
                 final_portfolio = pd.concat([final_portfolio,pd.DataFrame([e])])
             # st.write(e.Asset, "is invested with", amount_invested, "vs ", min_invested)
 
-
+    # final_portfolio['Amount Invested'] = final_portfolio['Amount Invested 2'].round(decimals=0)
+    # final_portfolio.drop('Amount Invested 2',axis=1,inplace=True)
 
     st.write("Actual Allocation")
     st.dataframe(final_portfolio,hide_index=True)
