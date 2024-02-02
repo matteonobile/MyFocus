@@ -25,7 +25,7 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
 st.set_page_config(layout="wide")
 
-st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240202 10:47", divider=True)
+st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240202 12:06", divider=True)
 st.sidebar.header("Portfolio")
 
 total_amount = st.sidebar.number_input("Size of portfolio",min_value = 5000000,value=50000000)
@@ -143,6 +143,41 @@ with structure:
         )
     else:
         alternative_df = pd.DataFrame([['Multi Hedge Focus USD',0]],columns = ['Asset','Weight'])
+
+    portfolio_weights = pd.Series([cash,bond,equity,alternative],
+                        index=['cash','bond','equity','alternative'])
+    
+    # normalize portfolio weights
+    portfolio_weights = portfolio_weights / portfolio_weights.sum()
+    
+    bond_portfolio = bond_df.copy()
+    bond_portfolio.Weight = bond_portfolio.Weight * portfolio_weights.bond
+    equity_portfolio = equity_df.copy()
+    equity_portfolio.Weight = equity_portfolio.Weight * portfolio_weights.equity
+    alternative_portfolio = alternative_df.copy()
+    alternative_portfolio.Weight = alternative_portfolio.Weight * portfolio_weights.alternative
+    cash_portfolio = pd.DataFrame([['Cash USD',cash*100]],columns = ['Asset','Weight'])
+    cash_portfolio.Weight = portfolio_weights.cash * 100
+    
+    detail_portfolio = pd.concat([bond_portfolio, equity_portfolio, alternative_portfolio,cash_portfolio])
+    
+    final_portfolio = pd.DataFrame()
+    for i,e in detail_portfolio.iterrows():
+        e['Amount Invested'] = e.Weight * total_amount / 100
+        e['Min Invested'] = assets[assets.Assets == e.Asset].iloc[0,6] # min capital
+        # st.dataframe(e)
+        if e['Amount Invested'] > 0:
+            if final_portfolio.shape[0] == 0:
+                final_portfolio = pd.DataFrame(e).T
+            else:
+                final_portfolio = pd.concat([final_portfolio,pd.DataFrame([e])])
+            # st.write(e.Asset, "is invested with", amount_invested, "vs ", min_invested)
+
+
+
+    st.write("Actual Allocation")
+    st.dataframe(final_portfolio,hide_index=True)
+
     
    
     if st.sidebar.button('Calc'):
