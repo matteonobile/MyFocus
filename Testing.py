@@ -26,7 +26,7 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 st.set_page_config(layout="wide")
 
 st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240307 10:54", divider=True)
-st.caption("Created by the Investment Risk Team - Anja heubly-Egli - Amanda Cotti - Matteo Nobile")
+st.caption("Created by the Investment Risk Team - Anja Heuby-Egli - Amanda Cotti - Matteo Nobile")
 st.sidebar.header("Portfolio")
 
 total_amount = st.sidebar.number_input("Size of portfolio in mio",min_value = 5,value=50)
