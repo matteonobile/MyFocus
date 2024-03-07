@@ -663,6 +663,6 @@ with team:
         st.write("Master in Banking and Finance - St.Gallen(HSG)")
     with col3:
         st.image("./Assets/Matteo.png",caption="Matteo Nobile",width=300)
-        st.write("30 years IT/Risk Managing")
+        st.write("30 years IT/Risk Management")
         st.write("CIIA, CIWM, CFTe certified")
             
