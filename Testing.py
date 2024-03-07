@@ -25,7 +25,8 @@ risk_profiles = pd.read_pickle("./Assets/RiskProfile.pickle")
 
 st.set_page_config(layout="wide")
 
-st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240202 14:06", divider=True)
+st.header("EFG Asset Management - Portfolio Construction Tool - Alpha - 20240307 10:54", divider=True)
+st.caption("Created by the Investment Risk Team - Anja heubly-Egli - Amanda Cotti - Matteo Nobile")
 st.sidebar.header("Portfolio")
 
 total_amount = st.sidebar.number_input("Size of portfolio in mio",min_value = 5,value=50)
@@ -49,7 +50,7 @@ allocation_strategic = st.sidebar.selectbox(
 relative = st.sidebar.toggle("Relative",value='on')
 
 
-structure, composition, metrics = st.tabs(['Structure','Composition','Metrics'])
+structure, composition, metrics, team = st.tabs(['Structure','Composition','Metrics','Investment Risk Team'])
 
 
 with structure:
@@ -648,6 +649,25 @@ with structure:
             st.altair_chart(c,use_container_width=True)
             
                                             
+        with team:        
+            st.image("./Assets/Anja.png",caption="Anja Heuby-Egli")
+            st.image("./Assets/Amanda.jpg",caption="Amanda Cotti")
+            st.image("./Assets/Matteo.png",caption="Matteo Nobile")
+        #     # plot the total return
 
             
+with team:        
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.image("./Assets/Anja.png",caption="Anja Heuby-Egli",width = 300)
+        st.write("Global Head of Investment Risk, Investment Solutions and ESG Data")
+        st.write("Master in Mathematic - ETH Zurich")
+    with col2:
+        st.image("./Assets/Amanda.jpg",caption="Amanda Cotti",width=300)
+        st.write("1 year ESG/Risk")
+        st.write("Master in Banking and Finance - St.Gallen(HSG)")
+    with col3:
+        st.image("./Assets/Matteo.png",caption="Matteo Nobile",width=300)
+        st.write("30 years IT/Risk Managing")
+        st.write("CIIA, CIWM, CFTe certified")
             
