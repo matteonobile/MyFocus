@@ -649,11 +649,6 @@ with structure:
             st.altair_chart(c,use_container_width=True)
             
                                             
-        with team:        
-            st.image("./Assets/Anja.png",caption="Anja Heuby-Egli")
-            st.image("./Assets/Amanda.jpg",caption="Amanda Cotti")
-            st.image("./Assets/Matteo.png",caption="Matteo Nobile")
-        #     # plot the total return
 
             
 with team:        
